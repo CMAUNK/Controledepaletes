@@ -17,7 +17,7 @@ def carregar_codigos_base():
     wb = load_workbook(BASE_FILE)
     ws = wb.active
     codigos = []
-    for row in range(2, ws.max_row + 1):
+    for row in range(3, ws.max_row + 1):
         code = ws[f"{CODE_COLUMN}{row}"].value
         if code:
             codigos.append(code)
