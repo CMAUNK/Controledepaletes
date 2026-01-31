@@ -37,7 +37,7 @@ def gerar_planilha(dados, data_str):
     wb = load_workbook(BASE_FILE)
     ws = wb.active
     ws[DATE_CELL] = data_str
-    for row in range(2, ws.max_row + 1):
+    for row in range(3, ws.max_row + 1):
         code = ws[f"{CODE_COLUMN}{row}"].value
         ws[f"{QTY_COLUMN}{row}"].value = dados.get(code, 0)
     buffer = io.BytesIO()
