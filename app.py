@@ -25,11 +25,15 @@ def carregar_codigos_base():
 
 
 def normalizar_texto(texto):
-    pares = re.findall(r"S\d{2}\s*,?\s*(\d+)", texto.replace("-", ","), re.IGNORECASE)
-    codigos = re.findall(r"S\d{2}", texto.upper())
+    pares = re.findall(
+        r"(S\d{2})\s*(?:-|,)?\s*(\d+)",
+        texto.upper()
+    )
+    
     dados = {}
-    for c, q in zip(codigos, pares):
-        dados[c] = int(q)
+    for codigo, quantidade in pares:
+        dados[codigo] = int(quantidade)  # último valor prevalece
+        
     return dados
 
 
