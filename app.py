@@ -5,6 +5,10 @@ import pandas as pd
 import re
 import io
 
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import cm
+
 # ================= CONFIG =================
 st.set_page_config(page_title="Controle de Paletes", layout="centered")
 
@@ -57,6 +61,46 @@ def gerar_planilha(dados, data_str):
     return buffer
 
 
+def gerar_pdf(df, data_str):
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=landscape(A4))
+
+    largura, altura = landscape(A4)
+
+    # Título
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(2 * cm, altura - 2 * cm, "CONTROLE DE PALETES")
+    c.drawRightString(
+        largura - 2 * cm,
+        altura - 2 * cm,
+        f"DATA: {data_str}"
+    )
+
+    # Cabeçalho
+    y = altura - 3.5 * cm
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(2 * cm, y, "UNIDADE")
+    c.drawString(12 * cm, y, "CÓDIGO")
+    c.drawString(16 * cm, y, "QUANTIDADE DE PALETES")
+
+    y -= 0.6 * cm
+    c.setFont("Helvetica", 9)
+
+    for _, row in df.iterrows():
+        if y < 2 * cm:
+            c.showPage()
+            y = altura - 2 * cm
+
+        c.drawString(2 * cm, y, str(row["UNIDADE"]))
+        c.drawString(12 * cm, y, str(row["CÓDIGO"]))
+        c.drawString(16 * cm, y, str(row["QUANTIDADE DE PALETES"]))
+        y -= 0.5 * cm
+
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+
 # ================= UI =================
 
 st.title("📦 Controle de Paletes por Voz / Texto")
@@ -105,30 +149,39 @@ if st.session_state.get("confirmar"):
             zip(df_editado["Código"], df_editado["Quantidade"])
         )
 
-        arquivo = gerar_planilha(dados_finais, data_str)
+        arquivo_excel = gerar_planilha(dados_finais, data_str)
 
         st.success("Planilha gerada com sucesso")
 
+        # Download Excel
         st.download_button(
             label="⬇️ Baixar planilha",
-            data=arquivo,
+            data=arquivo_excel,
             file_name=f"CONTROLE_DE_PALETES_{data_str.replace('/', '-')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-        # === VISUALIZAÇÃO FINAL (MODELO REAL) ===
-        arquivo.seek(0)
+        # Visualização fiel ao modelo
+        arquivo_excel.seek(0)
         df_visualizacao = pd.read_excel(
-            arquivo,
+            arquivo_excel,
             header=1,
             usecols="A:C"
-        )
-
-        df_visualizacao = df_visualizacao.reset_index(drop=True)
+        ).reset_index(drop=True)
 
         st.subheader("👀 Visualização da planilha final")
         st.dataframe(
             df_visualizacao,
             use_container_width=True,
             height=600
+        )
+
+        # PDF
+        pdf = gerar_pdf(df_visualizacao, data_str)
+
+        st.download_button(
+            label="⬇️ Baixar PDF",
+            data=pdf,
+            file_name=f"CONTROLE_DE_PALETES_{data_str.replace('/', '-')}.pdf",
+            mime="application/pdf"
         )
