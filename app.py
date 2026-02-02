@@ -91,18 +91,26 @@ if st.session_state.get("confirmar"):
     df_editado = st.data_editor(df, num_rows="fixed")
 
     if st.button("Confirmar e gerar planilha"):
-        dados_finais = dict(zip(df_editado["Código"], df_editado["Quantidade"]))
-        arquivo, df_planilha = gerar_planilha(dados_finais, data_str)
+    dados_finais = dict(zip(df_editado["Código"], df_editado["Quantidade"]))
+    arquivo = gerar_planilha(dados_finais, data_str)
 
+    st.success("Planilha gerada com sucesso")
 
-        st.success("Planilha gerada com sucesso")
+    st.download_button(
+        label="⬇️ Baixar planilha",
+        data=arquivo,
+        file_name=f"CONTROLE_DE_PALETES_{data_str.replace('/', '-')}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
-        st.download_button(
-            label="⬇️ Baixar planilha",
-            data=arquivo,
-            file_name=f"CONTROLE_DE_PALETES_{data_str.replace('/', '-')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        st.subheader("👀 Visualização da planilha final")
-        st.dataframe(df_planilha, use_container_width=True)
+    arquivo.seek(0)
+    df_visualizacao = pd.read_excel(
+        arquivo,
+        header=1,
+        usecols="A:C"
+    )
+
+    st.subheader("👀 Visualização da planilha final")
+    st.dataframe(df_visualizacao, use_container_width=True)
+
 
