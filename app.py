@@ -5,8 +5,9 @@ import pandas as pd
 import re
 import io
 
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.pdfgen import canvas
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
 from reportlab.lib.units import cm
 
 # ================= CONFIG =================
@@ -63,43 +64,57 @@ def gerar_planilha(dados, data_str):
 
 def gerar_pdf(df, data_str):
     buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=landscape(A4))
 
-    largura, altura = landscape(A4)
-
-    # Título
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(2 * cm, altura - 2 * cm, "CONTROLE DE PALETES")
-    c.drawRightString(
-        largura - 2 * cm,
-        altura - 2 * cm,
-        f"DATA: {data_str}"
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=2*cm,
+        leftMargin=2*cm,
+        topMargin=2*cm,
+        bottomMargin=2*cm
     )
 
+    elementos = []
+
     # Cabeçalho
-    y = altura - 3.5 * cm
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(2 * cm, y, "UNIDADE")
-    c.drawString(12 * cm, y, "CÓDIGO")
-    c.drawString(16 * cm, y, "QUANTIDADE DE PALETES")
+    header = Table(
+        [["CONTROLE DE PALETES", f"DATA: {data_str}"]],
+        colWidths=[12*cm, 4*cm]
+    )
 
-    y -= 0.6 * cm
-    c.setFont("Helvetica", 9)
+    header.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,-1), colors.grey),
+        ("TEXTCOLOR", (0,0), (-1,-1), colors.white),
+        ("ALIGN", (0,0), (-1,-1), "CENTER"),
+        ("FONT", (0,0), (-1,-1), "Helvetica-Bold"),
+        ("FONTSIZE", (0,0), (-1,-1), 14),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 10),
+    ]))
 
-    for _, row in df.iterrows():
-        if y < 2 * cm:
-            c.showPage()
-            y = altura - 2 * cm
+    elementos.append(header)
 
-        c.drawString(2 * cm, y, str(row["UNIDADE"]))
-        c.drawString(12 * cm, y, str(row["CÓDIGO"]))
-        c.drawString(16 * cm, y, str(row["QUANTIDADE DE PALETES"]))
-        y -= 0.5 * cm
+    # Dados da tabela
+    dados_tabela = [df.columns.tolist()] + df.values.tolist()
 
-    c.save()
+    tabela = Table(
+        dados_tabela,
+        colWidths=[8*cm, 3*cm, 3*cm]
+    )
+
+    tabela.setStyle(TableStyle([
+        ("GRID", (0,0), (-1,-1), 1, colors.black),
+        ("BACKGROUND", (0,0), (-1,0), colors.red),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+        ("ALIGN", (1,1), (-1,-1), "CENTER"),
+        ("FONT", (0,0), (-1,0), "Helvetica-Bold"),
+        ("FONT", (0,1), (-1,-1), "Helvetica"),
+    ]))
+
+    elementos.append(tabela)
+    doc.build(elementos)
+
     buffer.seek(0)
     return buffer
-
 
 # ================= UI =================
 
@@ -129,7 +144,6 @@ if st.button("Interpretar"):
         st.session_state["dados"] = dados_validos
         st.session_state["confirmar"] = True
 
-
 # ================= PRÉ-VISUALIZAÇÃO =================
 
 if st.session_state.get("confirmar"):
@@ -153,7 +167,6 @@ if st.session_state.get("confirmar"):
 
         st.success("Planilha gerada com sucesso")
 
-        # Download Excel
         st.download_button(
             label="⬇️ Baixar planilha",
             data=arquivo_excel,
@@ -168,13 +181,18 @@ if st.session_state.get("confirmar"):
             header=1,
             usecols="A:C"
         ).reset_index(drop=True)
-        
+
+        # Remove linhas vazias (fix do nan nan 0)
+        df_visualizacao = df_visualizacao[
+            df_visualizacao["UNIDADE"].notna()
+        ]
+
+        # Normaliza cabeçalho
         df_visualizacao.columns = [
             "UNIDADE",
             "CÓDIGO",
             "QUANTIDADE DE PALETES"
         ]
-
 
         st.subheader("👀 Visualização da planilha final")
         st.dataframe(
