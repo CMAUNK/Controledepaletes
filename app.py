@@ -168,6 +168,13 @@ if st.session_state.get("confirmar"):
             header=1,
             usecols="A:C"
         ).reset_index(drop=True)
+        
+        df_visualizacao.columns = [
+            "UNIDADE",
+            "CÓDIGO",
+            "QUANTIDADE DE PALETES"
+        ]
+
 
         st.subheader("👀 Visualização da planilha final")
         st.dataframe(
