@@ -41,14 +41,29 @@ def gerar_planilha(dados, data_str):
     wb = load_workbook(BASE_FILE)
     ws = wb.active
     ws[DATE_CELL] = data_str
+    
+    linhas = []
+
     for row in range(3, ws.max_row + 1):
+        unidade = ws[f"A{row}"].value
         code = ws[f"{CODE_COLUMN}{row}"].value
-        ws[f"{QTY_COLUMN}{row}"].value = dados.get(code, 0)
+        quantidade = dados.get(code, 0)
+        ws[f"{QTY_COLUMN}{row}"].value = quantidade
+
+        linhas.append({
+            "UNIDADE": unidade,
+            "CÓDIGO": code,
+            "QUANTIDADE DE PALETES": quantidade
+        })
+
     buffer = io.BytesIO()
     wb.save(buffer)
     buffer.seek(0)
-    return buffer
 
+    df_final = pd.DataFrame(linhas)
+    return buffer, df_final
+
+    
 # ================= UI =================
 st.title("📦 Gerar Planilha - Controle de Paletes")
 
@@ -85,7 +100,8 @@ if st.session_state.get("confirmar"):
 
     if st.button("Confirmar e gerar planilha"):
         dados_finais = dict(zip(df_editado["Código"], df_editado["Quantidade"]))
-        arquivo = gerar_planilha(dados_finais, data_str)
+        arquivo, df_planilha = gerar_planilha(dados_finais, data_str)
+
 
         st.success("Planilha gerada com sucesso")
         st.dataframe(df_editado)
@@ -96,3 +112,6 @@ if st.session_state.get("confirmar"):
             file_name=f"CONTROLE_DE_PALETES_{data_str.replace('/', '-')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+        st.subheader("👀 Visualização da planilha final")
+        st.dataframe(df_planilha, use_container_width=True)
+
