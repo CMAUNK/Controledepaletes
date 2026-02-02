@@ -42,26 +42,18 @@ def gerar_planilha(dados, data_str):
     ws = wb.active
     ws[DATE_CELL] = data_str
     
-    linhas = []
 
     for row in range(3, ws.max_row + 1):
-        unidade = ws[f"A{row}"].value
         code = ws[f"{CODE_COLUMN}{row}"].value
         quantidade = dados.get(code, 0)
         ws[f"{QTY_COLUMN}{row}"].value = quantidade
 
-        linhas.append({
-            "UNIDADE": unidade,
-            "CÓDIGO": code,
-            "QUANTIDADE DE PALETES": quantidade
-        })
+        
 
     buffer = io.BytesIO()
     wb.save(buffer)
     buffer.seek(0)
-
-    df_final = pd.DataFrame(linhas)
-    return buffer, df_final
+    return buffer
 
     
 # ================= UI =================
