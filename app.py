@@ -50,7 +50,7 @@ def gerar_planilha(dados, data_str):
     return buffer
 
 # ================= UI =================
-st.title("📦 Controle de Paletes por Voz / Texto")
+st.title("📦 Controle de Paletes por Voz ")
 
 st.markdown("Modelo fixo | Pré-visualização obrigatória | Excel real")
 
