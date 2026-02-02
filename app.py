@@ -8,7 +8,7 @@ import io
 # ================= CONFIG =================
 st.set_page_config(page_title="Controle de Paletes", layout="centered")
 
-BASE_FILE = "planilha_base.xlsx"   # arquivo fixo no repositório
+BASE_FILE = "planilha_base.xlsx"
 CODE_COLUMN = "B"
 QTY_COLUMN = "C"
 DATE_CELL = "C1"
@@ -29,12 +29,6 @@ def carregar_codigos_base():
 
 
 def normalizar_texto(texto):
-    """
-    Aceita:
-    S21 - 3
-    S21, 3
-    S21 3
-    """
     pares = re.findall(
         r"(S\d{2})\s*(?:-|,)?\s*(\d+)",
         texto.upper()
@@ -42,7 +36,7 @@ def normalizar_texto(texto):
 
     dados = {}
     for codigo, quantidade in pares:
-        dados[codigo] = int(quantidade)  # último valor prevalece
+        dados[codigo] = int(quantidade)
 
     return dados
 
@@ -51,14 +45,11 @@ def gerar_planilha(dados, data_str):
     wb = load_workbook(BASE_FILE)
     ws = wb.active
 
-    # Data no topo
     ws[DATE_CELL] = data_str
 
-    # Preencher quantidades respeitando o modelo fixo
     for row in range(3, ws.max_row + 1):
         code = ws[f"{CODE_COLUMN}{row}"].value
-        quantidade = dados.get(code, 0)
-        ws[f"{QTY_COLUMN}{row}"].value = quantidade
+        ws[f"{QTY_COLUMN}{row}"].value = dados.get(code, 0)
 
     buffer = io.BytesIO()
     wb.save(buffer)
@@ -71,17 +62,14 @@ def gerar_planilha(dados, data_str):
 st.title("📦 Controle de Paletes por Voz / Texto")
 st.markdown("Modelo fixo | Pré-visualização obrigatória | Excel real")
 
-# Entrada de texto
 texto = st.text_area(
     "Digite ou cole os códigos (ex: S21 - 6, S31 - 9)",
     height=150
 )
 
-# Data (automática, editável)
 data_sel = st.date_input("Data", value=date.today())
 data_str = data_sel.strftime("%d/%m/%Y")
 
-# Botão interpretar
 if st.button("Interpretar"):
     codigos_base = carregar_codigos_base()
     dados_brutos = normalizar_texto(texto)
@@ -104,12 +92,12 @@ if st.session_state.get("confirmar"):
 
     st.subheader("🧾 Pré-visualização (editável)")
 
-    df = pd.DataFrame(
+    df_preview = pd.DataFrame(
         [{"Código": c, "Quantidade": q}
          for c, q in st.session_state["dados"].items()]
     )
 
-    df_editado = st.data_editor(df, num_rows="fixed")
+    df_editado = st.data_editor(df_preview, num_rows="fixed")
 
     if st.button("Confirmar e gerar planilha"):
 
@@ -121,7 +109,6 @@ if st.session_state.get("confirmar"):
 
         st.success("Planilha gerada com sucesso")
 
-        # Download
         st.download_button(
             label="⬇️ Baixar planilha",
             data=arquivo,
@@ -129,13 +116,19 @@ if st.session_state.get("confirmar"):
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-        # Visualização FINAL (modelo real do Excel)
+        # === VISUALIZAÇÃO FINAL (MODELO REAL) ===
         arquivo.seek(0)
         df_visualizacao = pd.read_excel(
             arquivo,
-            header=1,      # pula linha do título
-            usecols="A:C"  # UNIDADE | CÓDIGO | QUANTIDADE
+            header=1,
+            usecols="A:C"
         )
 
+        df_visualizacao = df_visualizacao.reset_index(drop=True)
+
         st.subheader("👀 Visualização da planilha final")
-        st.dataframe(df_visualizacao, use_container_width=True)
+        st.dataframe(
+            df_visualizacao,
+            use_container_width=True,
+            height=600
+        )
