@@ -104,7 +104,6 @@ if st.session_state.get("confirmar"):
 
 
         st.success("Planilha gerada com sucesso")
-        st.dataframe(df_editado)
 
         st.download_button(
             label="⬇️ Baixar planilha",
